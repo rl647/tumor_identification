@@ -21,7 +21,7 @@ from torch.utils.data import DataLoader
 #%%
 
 input_data = {}
-path = '/home/runfeng/Dropbox/astra_zenca/data/catalyst_open_innovation_challenge/train/compressed_files'
+path = '.../data/catalyst_open_innovation_challenge/train/compressed_files'
 for file in os.listdir(path):
         
     nii_img = nib.load(f"{path}/{file}")
@@ -32,7 +32,7 @@ for file in os.listdir(path):
     input_data[file]=input_image
 label_data = {}
 import numpy as np
-path = '/home/runfeng/Dropbox/astra_zenca/data/output/label1'
+path = '.../astra_zenca/data/output/label1'
 for file in os.listdir(path):
     im_frame = Image.open(f'{path}/{file}')
     label_array = np.array(im_frame).astype(np.float32) 
@@ -255,13 +255,13 @@ for epoch in range(num_epochs):
         loss.backward()
         optimizer.step()
     print(f'Epoch {epoch+1}, Loss: {loss.item()}')
-    torch.save(model.state_dict(), '/home/runfeng/Dropbox/astra_zenca/code/parameters/Unet_model2.pth')
+    torch.save(model.state_dict(), '.../parameters/Unet_model2.pth')
 
 #%%
 device = "cpu" if torch.cuda.is_available() else "cpu"
 
 model = UNet().to(device)
-model.load_state_dict(torch.load(f'/home/runfeng/Dropbox/astra_zenca/code/parameters/Unet_model2.pth',map_location=device),strict=True)
+model.load_state_dict(torch.load(f'.../parameters/Unet_model2.pth',map_location=device),strict=True)
 
 
 #%%
