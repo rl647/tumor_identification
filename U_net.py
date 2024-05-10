@@ -225,7 +225,7 @@ def random_rotate_flip_tensor(image, label):
 device = "cuda" if torch.cuda.is_available() else "cpu"
 num_epochs=10000
 model = UNet().to(device)
-model.load_state_dict(torch.load(f'/home/runfeng/Dropbox/astra_zenca/code/parameters/Unet_model2.pth',map_location=device),strict=True)
+model.load_state_dict(torch.load(f'.../parameters/Unet_model2.pth',map_location=device),strict=True)
 
 optimizer = torch.optim.Adam(model.parameters(), lr=0.00001)
 loss_function = nn.BCELoss()
@@ -320,7 +320,6 @@ for j in range(total_plots, num_rows * 4):
     ax = axes.flat[j]
     ax.axis('off')
 plt.tight_layout() 
-# plt.savefig('/home/runfeng/Dropbox/astra_zenca/data/test.svg', bbox_inches='tight') 
 plt.show()
 
 
