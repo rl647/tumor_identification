@@ -117,7 +117,7 @@ def random_rotate_flip_tensor(image, label):
 import torch
 import torch.nn as nn
 import math
-
+'''this model is from https://github.com/milmor/diffusion-transformer/blob/main/dit.py'''
 
 class PositionalEmbedding(nn.Module):
     def __init__(self, dim, scale=1.0):
