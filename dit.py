@@ -323,8 +323,8 @@ for epoch in range(num_epochs):
         noisy_inputs = noisy_inputs.to(device)
         labels = labels.to(device)
         optimizer.zero_grad()
-        tt = torch.randint(low=0, high=10, size=(noisy_inputs.shape[0],)) 
-        outputs = model(noisy_inputs,tt)
+        
+        outputs = model(noisy_inputs,t)
         outputs = outputs.permute(0, 3, 2, 1)
         loss = loss_function(outputs, labels.float())
         loss.backward()
