@@ -21,7 +21,14 @@ from torch.utils.data import DataLoader
 #%%
 
 input_data = {}
-path = '.../data/catalyst_open_innovation_challenge/train/compressed_files'
+
+with open('my.env', 'r') as f:
+    lines=f.readlines()
+    trainpath=lines[0].strip()
+    labelpath=lines[1].strip()
+    parampath=lines[2].strip()
+
+path = trainpath
 for file in os.listdir(path):
         
     nii_img = nib.load(f"{path}/{file}")
@@ -32,7 +39,7 @@ for file in os.listdir(path):
     input_data[file]=input_image
 label_data = {}
 import numpy as np
-path = '.../data/catalyst_open_innovation_challenge/train_labels/compressed_files'
+path = labelpath
 for file in os.listdir(path):
     nii_img = nib.load(f"{path}/{file}")
     file = file[:-7]
@@ -247,6 +254,8 @@ class FinalLayer(nn.Module):
         x = self.linear(x)
         return x
 
+
+
 class DiT(nn.Module):
     def __init__(self, img_size, dim=64, patch_size=16,
                  depth=3, heads=4, mlp_dim=512, k=64, in_channels=10):
@@ -297,7 +306,7 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 model = DiT(img_size=320).to(device)
 
 #%%
-num_epochs=10000
+num_epochs=1000
 # model.load_state_dict(torch.load(f'.../parameters/dit.pth',map_location=device),strict=True)
 
 optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
@@ -312,13 +321,13 @@ for epoch in range(num_epochs):
         
         inputs_transformed, labels_transformed = [], []
 
-        for img, lbl in zip(noisy_inputs, labels):
-            img_t, lbl_t = random_rotate_flip_tensor(img, lbl)
-            inputs_transformed.append(img_t)
-            labels_transformed.append(lbl_t)
+        #for img, lbl in zip(noisy_inputs, labels):
+        #    img_t, lbl_t = random_rotate_flip_tensor(img, lbl)
+        #    inputs_transformed.append(img_t)
+        #    labels_transformed.append(lbl_t)
         
-        noisy_inputs = torch.stack(inputs_transformed).to(device)
-        labels = torch.stack(labels_transformed).to(device)
+        #noisy_inputs = torch.stack(inputs_transformed).to(device)
+        #labels = torch.stack(labels_transformed).to(device)
         
         noisy_inputs = noisy_inputs.to(device)
         labels = labels.to(device)
@@ -330,19 +339,86 @@ for epoch in range(num_epochs):
         loss.backward()
         optimizer.step()
     print(f'Epoch {epoch+1}, Loss: {loss.item()}')
-    torch.save(model.state_dict(), '.../parameters/dit.pth')
+    torch.save(model.state_dict(), parampath)
 
 #%%
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 model = DiT(img_size=320).to(device)
-model.load_state_dict(torch.load(f'.../parameters/dit.pth',map_location=device),strict=True)
+model.load_state_dict(torch.load(parampath,map_location=device),strict=True)
 
 
 
 #%%
 
+##plot 
 
+device = "cpu" if torch.cuda.is_available() else "cpu"
+
+model = DiT(img_size=320).to(device)
+model.load_state_dict(torch.load(parampath,map_location=device),strict=True)
+
+
+
+
+#%%
+inputs = []
+predictions = []
+actual = []
+model.eval()
+with torch.no_grad():
+    # for input1, keys in train_dataloader: 
+    for input1, keys in test_dataloader: 
+        inputs.append(input1)
+
+        input1 = input1.permute(0, 3, 1, 2)
+        
+        input1 = input1.to(device)
+        tt = torch.zeros(input1.shape[0], dtype=input1.dtype).to(device)
+        predictions.append(model(input1,tt).permute(0, 2, 3, 1).detach().cpu().numpy())
+        actual.append(keys.detach().cpu().numpy())
+#%%
+from sklearn.metrics import roc_auc_score
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+from sklearn.metrics import confusion_matrix
+
+num_groups = len(inputs) 
+num_slices = 10  
+
+fig, axes = plt.subplots(nrows=3 * num_slices, ncols=num_groups, figsize=(num_groups * 3, num_slices * 9))
+
+for group_idx in range(num_groups):
+
+    input_imgs = np.squeeze(inputs[group_idx].detach().cpu().numpy(),axis=(0)) 
+    actual_imgs = np.squeeze(actual[group_idx],axis=(0)) 
+    pred_imgs = np.squeeze(predictions[group_idx],axis=(0)) 
+    pred_imgs = (pred_imgs >= 0.5).astype(int)
+
+    for slice_idx in range(num_slices):
+        input_img = input_imgs[:, :, slice_idx]  
+        actual_img = actual_imgs[:, :, slice_idx]  
+        pred_img = pred_imgs[:, :, slice_idx]  
+
+        axes[slice_idx * 3, group_idx].imshow(input_img, cmap='gray')
+        if group_idx == 0:
+            axes[slice_idx * 3, group_idx].set_ylabel('Input', fontsize=12)
+        axes[slice_idx * 3, group_idx].axis('off')
+
+        axes[slice_idx * 3 + 1, group_idx].imshow(actual_img, cmap='gray')
+        if group_idx == 0:
+            axes[slice_idx * 3 + 1, group_idx].set_ylabel('Actual', fontsize=12)
+        axes[slice_idx * 3 + 1, group_idx].axis('off')
+
+        axes[slice_idx * 3 + 2, group_idx].imshow(pred_img, cmap='gray')
+        if group_idx == 0:
+            axes[slice_idx * 3 + 2, group_idx].set_ylabel('Predicted', fontsize=12)
+        axes[slice_idx * 3 + 2, group_idx].axis('off')
+
+plt.tight_layout()
+# plt.savefig('train.svg', bbox_inches='tight') 
+plt.savefig('test.png', bbox_inches='tight')
+
+#plt.show()
 
 
 
